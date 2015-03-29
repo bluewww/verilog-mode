@@ -642,6 +642,20 @@ If non-nil, treat as:
   :type 'boolean)
 (put 'verilog-indent-declaration-macros 'safe-local-variable 'verilog-booleanp)
 
+(defcustom verilog-indent-declaration-userdef nil
+  "How to treat typedef expansions in a declaration.
+If nil, indent as:
+	input logic [31:0] a;
+	input logic        b_typedef b;
+	output logic       c;
+If non nil, treat as:
+	input logic [31:0] a;
+	input b_typedef    b;
+	output logic       c;"
+  :group 'verilog-mode-indent
+  :type 'boolean)
+(put 'verilog-indent-declaration-userdef 'safe-local-variable 'verilog-booleanp)
+
 (defcustom verilog-indent-lists t
   "How to treat indenting items in a list.
 If t (the default), indent as:
@@ -2788,6 +2802,19 @@ find the errors."
   (concat "^" verilog-declaration-re-2-macro))
 
 (defconst verilog-declaration-re-1-no-macro (concat "^" verilog-declaration-re-2-no-macro))
+
+
+(defconst verilog-declaration-re-2-userdef (concat 
+					    "\\s-*" 
+					    verilog-declaration-prefix-re 
+					    "\\s-+[a-zA-Z0-9_]+"
+					    "\\(\s-*" verilog-range-re "\\)?"))
+
+(defconst verilog-declaration-re-1-userdef (concat verilog-declaration-re-2-userdef "\\s-+[a-zA-Z0-9_]+"))
+
+(defconst verilog-declaration-re-userdef (concat "^" verilog-declaration-re-2-userdef))
+
+(defconst verilog-declaration-re-no-userdef (concat "\\s-*" verilog-declaration-prefix-re "\\s-*" verilog-declaration-core-re))
 
 (defconst verilog-defun-re
   (eval-when-compile (verilog-regexp-words '("macromodule" "module" "class" "program" "interface" "package" "primitive" "config"))))
@@ -6480,6 +6507,38 @@ Return >0 for nested struct."
     ;; false
     nil))
 
+(defun verilog-forward-userdef-declaration (edpos)
+  "If looking at a userdefined declaration, such as with typedefs, return true"
+  (save-excursion
+    (progn (setq b (point))
+	   (if (verilog-re-search-forward verilog-declaration-re-1-userdef edpos 'move)
+	       ;; it matched the superset of userdef-re, now check if it is just a 
+	       ;; normal declaration
+	       (progn 
+		 (goto-char b)
+		 (setq e (match-end 0))
+		 (if (verilog-re-search-forward verilog-declaration-re-no-userdef e 'move)
+		     nil
+		   ;; return true only if it doesn't match normal declaration
+		   t))
+	     nil))))
+
+(defun verilog-backward-userdef-declaration (beg)
+  "If looking at a userdefined declaration, such as with typedefs, return true"
+  (save-excursion
+    (progn (setq e (point))
+	   (if (verilog-re-search-backward verilog-declaration-re-1-userdef beg 'move)
+	       ;; it matched the superset of userdef-re, now check if it is just a 
+	       ;; normal declaration
+	       (progn 
+		 (goto-char e)
+		 (setq b (match-beginning 0))
+		 (if (verilog-re-search-backward verilog-declaration-re-no-userdef b 'move)
+		     nil
+		   ;; return true only if it doesn't match normal declaration
+		   t))
+	     nil))))
+
 (defun verilog-parenthesis-depth ()
   "Return non zero if in parenthetical-expression."
   (save-excursion (nth 1 (verilog-syntax-ppss))))
@@ -6971,7 +7030,11 @@ Be verbose about progress unless optional QUIET set."
               ;; (verilog-do-indent (verilog-calculate-indent)))
 	      (verilog-forward-ws&directives)
 	      (cond
-	       ((or (and verilog-indent-declaration-macros
+	       ((or (and 
+		     (and verilog-indent-declaration-userdef
+			  (verilog-forward-userdef-declaration endpos))
+		     (looking-at verilog-declaration-re-2-userdef))
+		    (and verilog-indent-declaration-macros
 			 (looking-at verilog-declaration-re-2-macro))
 		    (looking-at verilog-declaration-re-2-no-macro))
 		(let ((p (match-end 0)))
@@ -7126,7 +7189,10 @@ BASEIND is the base indent to offset everything."
     (if (or (eq 'all verilog-auto-lineup)
 	    (eq 'declarations verilog-auto-lineup))
 	(if (verilog-re-search-backward
-	     (or (and verilog-indent-declaration-macros
+	     (or (and (and verilog-indent-declaration-userdef
+			   (verilog-backward-userdef-declaration lim))
+		      verilog-declaration-re-userdef)
+		 (and verilog-indent-declaration-macros
 		      verilog-declaration-re-1-macro)
 		 verilog-declaration-re-1-no-macro) lim t)
 	    (progn
@@ -7138,8 +7204,9 @@ BASEIND is the base indent to offset everything."
 		    (+ baseind
 		       (eval (cdr (assoc 'declaration verilog-indent-alist)))))
 	      (indent-line-to val)
-	      (if (and verilog-indent-declaration-macros
-		       (looking-at verilog-declaration-re-2-macro))
+	      (if (and (and verilog-indent-declaration-userdef
+			    (verilog-forward-userdef-declaration (line-end-position)))
+		       (looking-at verilog-declaration-re-2-userdef))
 		  (let ((p (match-end 0)))
 		    (set-marker m1 p)
 		    (if (verilog-re-search-forward "[[#`]" p 'move)
@@ -7153,7 +7220,8 @@ BASEIND is the base indent to offset everything."
 			  (progn
 			    (just-one-space)
 			    (indent-to ind)))))
-		(if (looking-at verilog-declaration-re-2-no-macro)
+		(if (and verilog-indent-declaration-macros
+			 (looking-at verilog-declaration-re-2-macro))
 		    (let ((p (match-end 0)))
 		      (set-marker m1 p)
 		      (if (verilog-re-search-forward "[[`#]" p 'move)
@@ -7166,7 +7234,21 @@ BASEIND is the base indent to offset everything."
 			(if (/= (current-column) ind)
 			    (progn
 			      (just-one-space)
-			      (indent-to ind))))))))))
+			      (indent-to ind)))))
+		  (if (looking-at verilog-declaration-re-2-no-macro)
+		      (let ((p (match-end 0)))
+			(set-marker m1 p)
+			(if (verilog-re-search-forward "[[`#]" p 'move)
+			    (progn
+			      (forward-char -1)
+			      (just-one-space)
+			      (goto-char (marker-position m1))
+			      (just-one-space)
+			      (indent-to ind))
+			  (if (/= (current-column) ind)
+			      (progn
+				(just-one-space)
+				(indent-to ind)))))))))))
     (goto-char pos)))
 
 (defun verilog-get-lineup-indent (b edpos)
@@ -7179,7 +7261,11 @@ Region is defined by B and EDPOS."
       (while (progn (setq e (marker-position edpos))
 		    (< (point) e))
 	(if (verilog-re-search-forward
-	     (or (and verilog-indent-declaration-macros
+	     (or (and 
+		  (and verilog-indent-declaration-userdef
+		       (verilog-forward-userdef-declaration e))
+		  verilog-declaration-re-userdef)
+		 (and verilog-indent-declaration-macros
 		      verilog-declaration-re-1-macro)
 		 verilog-declaration-re-1-no-macro) e 'move)
 	    (progn
