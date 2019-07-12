@@ -2751,6 +2751,8 @@ find the errors."
      '(
        ;; port direction (by themselves)
        "inout" "input" "output"
+       ;; parameter without type specification
+       "parameter"
        ;; integer_atom_type
        "byte" "shortint" "int" "longint" "integer" "time"
        ;; integer_vector_type
