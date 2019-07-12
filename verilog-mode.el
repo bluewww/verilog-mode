@@ -4466,7 +4466,8 @@ Uses `verilog-scan' cache."
       (verilog-backward-syntactic-ws))
   (let ((pt (point)))
     (catch 'done
-      (while (not (looking-at verilog-complete-reg))
+      (while (or (not (looking-at verilog-complete-reg))
+                 (verilog-in-parameter-p)) ; skip over parameter list
         (setq pt (point))
         (verilog-backward-syntactic-ws)
         (if (or (bolp)
@@ -6688,6 +6689,8 @@ Only look at a few lines to determine indent level."
 	  (let ((val))
 	    (verilog-beg-of-statement-1)
 	    (if (and (< (point) here)
+                     ;; not a parameter list following
+                     (not (verilog-re-search-forward "#(*" here t))
 		     (verilog-re-search-forward "=[ \t]*" here 'move)
 		     ;; not at a |=>, #=#, or [=n] operator
 		     (not (string-match "\\[=.\\|#=#\\||=>"
