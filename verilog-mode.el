@@ -6360,6 +6360,15 @@ Always starts from `point-min', to allow inserts with hooks disabled."
   (let ((state (save-excursion (parse-partial-sexp (point-min) (point)))))
     (> (nth 0 state) 0 )))
 
+(defun verilog-in-module-decl-p ()
+  "Return true if in a module declaration."
+  (save-excursion
+    (if (verilog-in-paren)
+        (progn
+          (verilog-backward-up-list 1)
+          (verilog-at-module-decl-p))
+      nil)))
+
 (defun verilog-in-struct-p ()
   "Return true if in a struct declaration."
   (interactive)
@@ -6453,6 +6462,12 @@ Return >0 for nested struct."
               (progn (goto-char pt) nil) 1)))
     ;; not
     nil))
+
+;; (defun verilog-at-module-decl-p ()
+;;   "If at the ( or #( of a module, return true."
+;;   (save-excursion
+;;     (if (and (equal (char-after) ?\()
+;;              (verilog-backward-token)))))
 
 (defun verilog-at-struct-p ()
   "If at the { of a struct, return true, not moving point."
