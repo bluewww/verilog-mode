@@ -7018,6 +7018,37 @@ Be verbose about progress unless optional QUIET set."
 		(verilog-forward-ws&directives)
 		(forward-line -1)))
 	      (forward-line 1))
+            (let ((ind (verilog-get-lineup-indent-2 verilog-assignment-operation-re startpos endpos)) ; Find the biggest prefix
+                  e)
+              ;; Now indent each line.
+              (goto-char (marker-position startpos))
+              (while (progn
+                       (setq e (marker-position endpos))
+                       (> e (point)))
+                (unless quiet
+                  (message " verilog-pretty-declarations: %d" (- e (point))))
+                (setq e (point))
+                (cond
+                 ((looking-at verilog-assignment-operation-re)
+                  (goto-char (match-beginning 2))
+                  (unless (or (verilog-in-parenthesis-p) ; Leave attributes and comparisons alone
+                              (verilog-in-coverage-p))
+                    (if (and nil;contains-2-char-operator
+                             (eq (char-after) ?=))
+                        (indent-to (1+ ind)) ; Line up the = of the <= with surrounding =
+                      (indent-to ind))))
+                 ;; ((verilog-continued-line-1 startpos)
+                 ;;  (goto-char e)
+                 ;;  (indent-line-to ind))
+                 (t                     ; Must be comment or white space
+                  ;; (goto-char e)
+                  ;; (verilog-forward-ws&directives)
+                  ;; (forward-line -1)
+                  )
+                 )
+                (forward-line 1)
+                )
+              )
 	    (unless quiet (message "")))))))
 
 (defun verilog-pretty-expr (&optional quiet)
