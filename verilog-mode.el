@@ -2804,9 +2804,9 @@ find the errors."
 (defconst verilog-declaration-re-1-no-macro (concat "^" verilog-declaration-re-2-no-macro))
 
 
-(defconst verilog-declaration-re-2-userdef (concat 
-					    "\\s-*" 
-					    verilog-declaration-prefix-re 
+(defconst verilog-declaration-re-2-userdef (concat
+					    "\\s-*"
+					    verilog-declaration-prefix-re
 					    "\\s-+[a-zA-Z0-9_]+"
 					    "\\(\s-*" verilog-range-re "\\)?"))
 
@@ -6514,7 +6514,7 @@ Return >0 for nested struct."
 	   (if (verilog-re-search-forward verilog-declaration-re-1-userdef edpos 'move)
 	       ;; it matched the superset of userdef-re, now check if it is just a 
 	       ;; normal declaration
-	       (progn 
+	       (progn
 		 (goto-char b)
 		 (setq e (match-end 0))
 		 (if (verilog-re-search-forward verilog-declaration-re-no-userdef e 'move)
@@ -6528,9 +6528,9 @@ Return >0 for nested struct."
   (save-excursion
     (progn (setq e (point))
 	   (if (verilog-re-search-backward verilog-declaration-re-1-userdef beg 'move)
-	       ;; it matched the superset of userdef-re, now check if it is just a 
+	       ;; it matched the superset of userdef-re, now check if it is just a
 	       ;; normal declaration
-	       (progn 
+	       (progn
 		 (goto-char e)
 		 (setq b (match-beginning 0))
 		 (if (verilog-re-search-backward verilog-declaration-re-no-userdef b 'move)
@@ -7030,7 +7030,7 @@ Be verbose about progress unless optional QUIET set."
               ;; (verilog-do-indent (verilog-calculate-indent)))
 	      (verilog-forward-ws&directives)
 	      (cond
-	       ((or (and 
+	       ((or (and
 		     (and verilog-indent-declaration-userdef
 			  (verilog-forward-userdef-declaration endpos))
 		     (looking-at verilog-declaration-re-2-userdef))
@@ -7261,7 +7261,7 @@ Region is defined by B and EDPOS."
       (while (progn (setq e (marker-position edpos))
 		    (< (point) e))
 	(if (verilog-re-search-forward
-	     (or (and 
+	     (or (and
 		  (and verilog-indent-declaration-userdef
 		       (verilog-forward-userdef-declaration e))
 		  verilog-declaration-re-userdef)
