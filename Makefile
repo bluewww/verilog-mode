@@ -22,7 +22,8 @@ MAKECHANGELOG = perl makechangelog
 export XEMACS
 export EMACS
 
-default : e/verilog-mode.elc x/verilog-mode.elc
+#default : e/verilog-mode.elc x/verilog-mode.elc
+default : e/verilog-mode.elc
 
 release : .timestamps
 install : .timestamps
@@ -33,13 +34,14 @@ install : .timestamps
 	@mkdir -p $@
 
 test:	.timestamps/test
-.timestamps/test: x/verilog-mode.elc e/verilog-mode.elc verilog.info 0test.el .timestamps
+#.timestamps/test: x/verilog-mode.elc e/verilog-mode.elc verilog.info 0test.el .timestamps
+.timestamps/test: e/verilog-mode.elc verilog.info 0test.el .timestamps
 ifeq ($(VERILOG_MODE_TEST_FILE),)
-	$(MAKE) test_batch test_errors test_emacs test_xemacs
+	$(MAKE) test_batch test_errors test_emacs
 	@touch $@
 	@echo ======= ALL TESTS PASSED
 else
-	$(MAKE) test_emacs test_xemacs
+	$(MAKE) test_emacs
 endif
 
 #Usage: $(call test-emacs_sub,label,threading)

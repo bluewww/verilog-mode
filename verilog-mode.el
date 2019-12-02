@@ -642,7 +642,7 @@ If non-nil, treat as:
   :type 'boolean)
 (put 'verilog-indent-declaration-macros 'safe-local-variable 'verilog-booleanp)
 
-(defcustom verilog-indent-declaration-userdef nil
+(defcustom verilog-indent-declaration-userdef t
   "How to treat typedef expansions in a declaration.
 If nil, indent as:
 	input logic [31:0] a;
@@ -7051,8 +7051,8 @@ Be verbose about progress unless optional QUIET set."
 		      (just-one-space)
 		      (indent-to ind)))))
 	       ((verilog-continued-line-1 (marker-position startpos))
-		(goto-char e)
-		(indent-line-to ind))
+	        (goto-char e)
+	        (indent-line-to ind))
 	       ((verilog-in-struct-p)
 		;; could have a declaration of a user defined item
 		(goto-char e)
