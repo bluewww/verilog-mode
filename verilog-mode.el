@@ -6511,8 +6511,9 @@ Return >0 for nested struct."
   "If looking at a userdefined declaration, such as with typedefs, return true"
   (save-excursion
     (progn (setq b (point))
-	   (if (verilog-re-search-forward verilog-declaration-re-1-userdef edpos 'move)
-	       ;; it matched the superset of userdef-re, now check if it is just a 
+	   (if (and (< b edpos)
+                    (verilog-re-search-forward verilog-declaration-re-1-userdef edpos 'move))
+	       ;; it matched the superset of userdef-re, now check if it is just a
 	       ;; normal declaration
 	       (progn
 		 (goto-char b)
